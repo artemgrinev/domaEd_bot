@@ -1,5 +1,6 @@
 from aiogram import Bot, Dispatcher, executor, types
-from parsers.edaru import get_ingredients
+
+from db.conect_db import get_user, get_recipes
 
 from configurations import API_TOKEN
 
@@ -16,11 +17,17 @@ async def send_welcome(message: types.Message):
 @dp.message_handler()
 async def echo(message: types.Message):
     url = message.text
-    d = get_ingredients(url)
-    ingredients_str = ''
-    for k, v in d.items():
-        ingredients_str += f'{k} - {v}\n'
-    await message.answer(ingredients_str)
+    user_id = message.from_user.id
+    last_name = message.from_user.last_name
+    first_name = message.from_user.first_name
+    get_user(user_id, last_name, first_name)
+    if url.split('/')[0] != "https:":
+        await message.answer('Сообщение должно содержать https:')
+    elif url.split('/')[2] != "eda.ru":
+        await message.answer('Извини, я пока умею работать только с рецептами сайта eda.ru')
+    else:
+        name, ingredients = get_recipes(url)
+        await message.answer(ingredients)
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
